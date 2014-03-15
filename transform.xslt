@@ -112,10 +112,45 @@
   <xsl:template mode="text" match="text()">
     <xsl:value-of select="."/>
   </xsl:template>
-  <xsl:template mode="text" match="span[@class = 'c6']">
-    <emphasis><xsl:apply-templates mode="text"/></emphasis>
+  <xsl:variable name="bold">
+    <xsl:call-template name="css2xml">
+      <xsl:with-param name="text" select="/html/head/style/text()"/>
+      <xsl:with-param name="pattern">font-weight:bold</xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="italic">
+    <xsl:call-template name="css2xml">
+      <xsl:with-param name="text" select="/html/head/style/text()"/>
+      <xsl:with-param name="pattern">font-style:italic</xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:template mode="text" match="span[@class]">
+    <xsl:choose>
+      <xsl:when test="@class = $bold or @class = $italic">
+        <emphasis><xsl:apply-templates mode="text"/></emphasis>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:apply-templates mode="text"/>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
-  <xsl:template mode="text" match="span[@class = 'c16']">
-    <emphasis><xsl:apply-templates mode="text"/></emphasis>
+  <!-- find CSS tags -->
+  <xsl:template name="css2xml">
+    <xsl:param name="text"/>
+    <xsl:param name="pattern"/>
+    <xsl:if test="$text">
+      <xsl:variable name="key" select="substring-before($text, '{')"/>
+      <xsl:variable name="rest" select="substring-after($text, '{')"/>
+      <xsl:variable name="value" select="substring-before($rest, '}')"/>
+      <xsl:choose>
+        <xsl:when test="$value = $pattern"><xsl:value-of select="substring-after($key, '.')"/></xsl:when>
+        <xsl:otherwise>
+          <xsl:call-template name="css2xml">
+            <xsl:with-param name="text" select="substring-after($rest, '}')"/>
+            <xsl:with-param name="pattern" select="$pattern"/>
+          </xsl:call-template>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:if>
   </xsl:template>
 </xsl:stylesheet>
