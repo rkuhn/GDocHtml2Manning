@@ -8,6 +8,9 @@
   <xsl:template mode="text" match="*">
     <xsl:message>unknown element type <xsl:value-of select="name(.)"/></xsl:message>
   </xsl:template>
+  <xsl:template mode="code" match="*">
+    <xsl:message>unknown element type <xsl:value-of select="name(.)"/></xsl:message>
+  </xsl:template>
   <!-- top-level processing rule -->
   <xsl:template match="html">
     <chapter>
@@ -108,10 +111,55 @@
       <xsl:apply-templates mode="text" select="/html/body/div/*[../p[1]/a[position() = 1 and @name = $tag]]"/>
     </footnote>
   </xsl:template>
+  <!-- code snippets -->
+  <xsl:template mode="text" match="p[./span[1]/@class]">
+    <xsl:choose>
+      <xsl:when test="span[1]/@class = $codefont">
+        <xsl:choose>
+          <xsl:when test="preceding-sibling::p[1]/span[1]/@class = $codefont"/>
+          <xsl:otherwise>
+            <informalexample>
+              <programlisting>
+                <xsl:apply-templates mode="code" select="span/*|span/text()"/>
+                <xsl:apply-templates mode="code" select="following-sibling::p[1][span[1]/@class]"/>
+              </programlisting>
+            </informalexample>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:when>
+      <xsl:otherwise>
+        <para>
+          <xsl:apply-templates mode="text"/>
+        </para>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+  <xsl:template mode="code" match="p">
+    <xsl:if test="span[1]/@class = $codefont">
+      <xsl:message>found extension <xsl:value-of select="span/text()"/></xsl:message>
+      <xsl:text>
+</xsl:text>
+      <xsl:apply-templates mode="code" select="span/*|span/text()"/>
+      <xsl:apply-templates mode="code" select="following-sibling::p[1][span/@class]"/>
+    </xsl:if>
+  </xsl:template>
+  <xsl:template mode="code" match="text()">
+    <xsl:value-of select="."/>
+  </xsl:template>
+  <xsl:template mode="code" match="br">
+    <xsl:text>
+</xsl:text>
+  </xsl:template>
   <!-- text copying -->
   <xsl:template mode="text" match="text()">
     <xsl:value-of select="."/>
   </xsl:template>
+  <xsl:variable name="codefont">
+    <xsl:call-template name="css2xml">
+      <xsl:with-param name="text" select="/html/head/style/text()"/>
+      <xsl:with-param name="pattern">font-family:"Consolas"</xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
   <xsl:variable name="bold">
     <xsl:call-template name="css2xml">
       <xsl:with-param name="text" select="/html/head/style/text()"/>
